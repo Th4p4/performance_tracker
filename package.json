@@ -1,10 +1,10 @@
 {
   "name": "database_design_ts",
   "version": "1.0.0",
-  "main": "app.ts",
+  "main": "server.ts",
   "license": "MIT",
   "scripts": {
-    "start": "nodemon app.ts"
+    "start": "nodemon server.ts"
   },
   "dependencies": {
     "bcrypt": "^5.0.1",
