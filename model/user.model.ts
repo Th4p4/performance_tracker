@@ -25,8 +25,8 @@ const userSchema = new Schema<IUser>(
       enum: ["developer", "lead", "Admin"],
       default: "developer",
     },
-    project: [{ type: mongoose.Types.ObjectId, ref: "project" }],
-    tasks: [{ type: mongoose.Types.ObjectId, ref: "task" }],
+    project: [{ type: Schema.Types.ObjectId, ref: "project" }],
+    tasks: [{ type: Schema.Types.ObjectId, ref: "task" }],
   },
   {
     timestamps: true,

@@ -37,7 +37,7 @@ export const createTask = async (
       name,
       project,
       status,
-      developer,
+      developer: developer?.push(...developer),
     });
     await task.save();
     res.status(201).json({ task: task, message: "Task created succesfully." });

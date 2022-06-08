@@ -76,12 +76,36 @@ export const userDetails = async (
   const id = req.params.id;
   try {
     const user = await UserModel.findById(id)
-      .populate("project")
-      .populate("tasks");
+      .populate({
+        path: "project",
+        select: "name-_id",
+      })
+      .populate({ path: "tasks", select: "name-_id" });
     if (!user) res.status(404).json("Couldn't find user with the given id.");
     res.status(200).json(user);
   } catch (error) {
     console.log(error);
     res.status(500).send("internal server error.");
+  }
+};
+
+export const addProjectsAndTasks = async function (
+  req: TypedRequest<Para, never, IUser>,
+  res: Response
+) {
+  const id = req.params.id;
+  const { project, tasks, designation } = req.body;
+  let user;
+  try {
+    user = await UserModel.findById(id);
+    if (!user) res.status(404).json({ message: "User not found." });
+    user?.project?.push(...project!);
+    user?.tasks?.push(...tasks!);
+    user!.designation = designation;
+    await user?.save();
+    res.status(200).json({ user: user, message: "Successfully updated data." });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "internal server error." });
   }
 };
