@@ -1,18 +1,11 @@
-import { Request, Response } from "express";
-import * as core from "express-serve-static-core";
-// import { omit } from "lodash";
+import { Response } from "express";
 import { IUser, UserModel } from "../model/user.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { TypedRequest, Para } from "../types/types";
 
-interface TypedRequest<P extends core.ParamsDictionary, U extends core.Query, T>
-  extends Request {
-  body: T;
-  query: U;
-  params: P;
-}
-interface Para extends core.ParamsDictionary {
-  id: string;
+interface MyToken {
+  isAdmin: boolean;
 }
 
 // interface ResBody extends IUser {
@@ -20,12 +13,11 @@ interface Para extends core.ParamsDictionary {
 // }
 
 export const signUp = async (
-  req: TypedRequest<never, never, Omit<IUser, "project" | "tasks">>,
+  req: TypedRequest<never, never, Omit<IUser, "_id">>,
   res: Response
 ) => {
-  const { name, email, password, designation } = req.body;
+  const { name, email, password, designation, project, tasks } = req.body;
   let user;
-
   try {
     user = await UserModel.findOne({ email });
     if (user) return res.send("User with this email already exists.");
@@ -33,10 +25,14 @@ export const signUp = async (
       name,
       email,
       password,
+      isAdmin: false,
       designation,
+      project,
+      tasks,
     });
     await user.save();
   } catch (err) {
+    console.log(err);
     res.status(500).send("Internal server errror");
   }
   res.json(user?.toJSON());
@@ -49,14 +45,20 @@ export const logIn = async (
   const { email, password } = req.body;
   let user;
   try {
-    user = await UserModel.findOne({ email });
+    user = await UserModel.findOne({ email }).populate("project");
+    console.log(user);
     if (!user)
       res.status(404).json("User with the given email doesn't exists.");
     // user?.comparePassword()
     if (!bcrypt.compareSync(password, user?.password!))
       return res.status(403).json("Password not matched");
     const jwToken = jwt.sign(
-      { userId: user?._id, userEMail: user?.email },
+      {
+        userId: user?._id,
+        userEMail: user?.email,
+        isAdmin: user?.isAdmin,
+        projects: user?.project,
+      },
       process.env.JWT_SECRET!,
       { expiresIn: process.env.JWTTTL }
     );
@@ -65,6 +67,7 @@ export const logIn = async (
       .status(200)
       .json({ token: jwToken, message: "successfully logged in." });
   } catch (error) {
+    console.log(error);
     res.status(500).json("Internal server error.");
   }
 };
@@ -76,11 +79,9 @@ export const userDetails = async (
   const id = req.params.id;
   try {
     const user = await UserModel.findById(id)
-      .populate({
-        path: "project",
-        select: "name-_id",
-      })
-      .populate({ path: "tasks", select: "name-_id" });
+      .populate("project", { name: 1, status: 1 })
+      .populate("tasks", { name: 1, status: 1 });
+    console.log(user, "details");
     if (!user) res.status(404).json("Couldn't find user with the given id.");
     res.status(200).json(user);
   } catch (error) {
@@ -89,8 +90,8 @@ export const userDetails = async (
   }
 };
 
-export const addProjectsAndTasks = async function (
-  req: TypedRequest<Para, never, IUser>,
+export const updateDetails = async function (
+  req: TypedRequest<Para, never, Omit<IUser, "name" | "email" | "password">>,
   res: Response
 ) {
   const id = req.params.id;
@@ -108,4 +109,34 @@ export const addProjectsAndTasks = async function (
     console.log(error);
     res.status(500).json({ message: "internal server error." });
   }
+};
+
+export const createUser = async (
+  req: TypedRequest<never, never, Omit<IUser, "_id">>,
+  res: Response
+) => {
+  const userData = req.userData as MyToken;
+  if (!userData?.isAdmin)
+    return res.status(401).json({ message: "Unauthorized to create user" });
+  const { name, email, password, designation, project, tasks, isAdmin } =
+    req.body;
+  let user;
+  try {
+    user = await UserModel.findOne({ email });
+    if (user) return res.send("User with this email already exists.");
+    user = new UserModel({
+      name,
+      email,
+      password,
+      isAdmin,
+      designation,
+      project,
+      tasks,
+    });
+    await user.save();
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Internal server errror");
+  }
+  res.json(user?.toJSON());
 };

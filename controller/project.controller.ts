@@ -1,16 +1,6 @@
-import { Request, Response } from "express";
-import * as core from "express-serve-static-core";
+import { Response } from "express";
 import { IProject, ProjectModel } from "../model/project.model";
-
-interface TypedRequest<P extends core.ParamsDictionary, U extends core.Query, T>
-  extends Request {
-  body: T;
-  query: U;
-  params: P;
-}
-interface Para extends core.ParamsDictionary {
-  id: string;
-}
+import { TypedRequest, Para } from "../types/types";
 
 export const createProject = async (
   req: TypedRequest<never, never, IProject>,
