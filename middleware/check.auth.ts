@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import HttpError from "../services/http.error";
 
 interface TypedRequest extends Request {
   userData?: string | JwtPayload;
@@ -11,12 +12,17 @@ interface MyToken {
 
 export default async (req: TypedRequest, res: Response, next: NextFunction) => {
   if (req.method == "OPTIONS") next();
-  if (!req.headers)
-    res.status(401).json({ message: "Unauthorize, no headers" });
+  if (!req.headers) {
+    const err = new HttpError("Unauthorized, no headers", 401);
+    return next(err);
+  }
   try {
     const token = req.headers.authorization?.split(" ")[1];
     console.log(token);
-    if (!token) res.status(401).json({ message: "Unauthorized" });
+    if (!token) {
+      const err = new HttpError("Unauthorized", 401);
+      return next(err);
+    }
     const decodedToken = jwt.verify(token!, process.env.JWT_SECRET!);
     // console.log(decodedToken);
     req.userData = {
@@ -25,6 +31,7 @@ export default async (req: TypedRequest, res: Response, next: NextFunction) => {
     };
     next();
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    const err = new HttpError(error.message, 401);
+    return next(err);
   }
 };

@@ -29,8 +29,8 @@ const userSchema = new Schema<IUser, User, IUserMethods>(
     isAdmin: { type: Boolean, required: true },
     designation: {
       type: String,
-      enum: ["developer", "Admin"],
-      default: "developer",
+      enum: ["Intern", "Junior", "Mid", "Senior"],
+      default: "Intern",
     },
     project: [{ type: mongoose.Types.ObjectId, ref: "project" }],
     tasks: [{ type: mongoose.Types.ObjectId, ref: "task" }],

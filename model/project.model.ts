@@ -17,7 +17,7 @@ export interface IProject {
 const projectSchema = new Schema<IProject>(
   {
     name: { type: String, required: true },
-    leader: { type: mongoose.Types.ObjectId, required: true, ref: "user" },
+    leader: { type: mongoose.Types.ObjectId, required: true },
     tasks: [{ type: mongoose.Types.ObjectId }],
     status: {
       type: String,
